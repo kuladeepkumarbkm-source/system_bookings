@@ -4,7 +4,6 @@ Seeded login credentials for testing
 ============
 Email:kuladeepadmin@example.com
 Password:password
-
 2)CUSTOMER LOGIN
 ===============
 Email:kumarcustomer@example.com
