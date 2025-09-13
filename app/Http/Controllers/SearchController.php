@@ -31,25 +31,37 @@ class SearchController extends Controller
         return view('search.flights', ['results' => $results, 'query' => $q]);
     }
 
-    public function hotels(HotelSearchRequest $request)
-    {
-        $q = $request->only(['city','checkin','checkout','sort']);
-        $key = 'hotels_' . md5(serialize($q));
+    // public function hotels(HotelSearchRequest $request)
+   public function hotels(Request $request)
+{
+    $q = $request->only(['city','checkin','checkout','sort']);
+    $city = $q['city'] ?? '';   // Set default if city is not provided
+    $sort = $q['sort'] ?? '';
 
-        $results = Cache::remember($key, 300, function () use ($q) {
-            $json = Storage::disk('local')->get('mocks/hotels.json');
-            $rows = collect(json_decode($json, true));
-            $filtered = $rows->filter(fn($r) => strcasecmp($r['city'], $q['city']) === 0);
-            if (isset($q['sort']) && $q['sort'] === 'asc') {
-                $filtered = $filtered->sortBy('price_per_night_in_inr');
-            } elseif (isset($q['sort']) && $q['sort'] === 'desc') {
-                $filtered = $filtered->sortByDesc('price_per_night_in_inr');
-            }
-            return $filtered->values()->all();
-        });
+    $key = 'hotels_' . md5(serialize($q));
 
-        return view('search.hotels', ['results' => $results, 'query' => $q]);
-    }
+    $results = Cache::remember($key, 300, function () use ($city, $sort) {
+        $json = Storage::disk('local')->get('mocks/hotels.json');
+        $rows = collect(json_decode($json, true));
+
+        // Filter only if city is provided
+        $filtered = $rows;
+        if (!empty($city)) {
+            $filtered = $rows->filter(fn($r) => strcasecmp($r['city'], $city) === 0);
+        }
+
+        if ($sort === 'asc') {
+            $filtered = $filtered->sortBy('price_per_night_in_inr');
+        } elseif ($sort === 'desc') {
+            $filtered = $filtered->sortByDesc('price_per_night_in_inr');
+        }
+
+        return $filtered->values()->all();
+    });
+
+    return view('search.hotels', ['results' => $results, 'query' => $q]);
+}
+
 
     public function details(Request $request, $type, $id)
     {
